@@ -8,7 +8,8 @@ from kivy.clock import Clock
 
 import pymem
 import pymem.process
-from pynput.mouse import Button as MouseButton, Controller
+from pynput.mouse import Button as MouseButton, Controller as MouseController
+from pynput import keyboard
 
 # Имя процесса, к которому вы хотите подключиться
 process_name = "Ld9BoxHeadless.exe"
@@ -72,7 +73,7 @@ class MemoryReaderApp(App):
         self.layout.add_widget(self.update_button)
 
         # Mouse controller for clicking
-        self.mouse = Controller()
+        self.mouse = MouseController()
 
         # Variable to keep track of whether the updating is ongoing
         self.updating = False
@@ -81,6 +82,10 @@ class MemoryReaderApp(App):
         self.threshold = 5000
 
         self.goldTarget = 5000
+
+        # Setting up the keyboard listener
+        self.keyboard_listener = keyboard.Listener(on_press=self.on_key_press)
+        self.keyboard_listener.start()
 
         return self.layout
 
@@ -113,11 +118,21 @@ class MemoryReaderApp(App):
         if not self.updating:
             self.updating = True
             self.update_button.text = "Stop Searching"
-            Clock.schedule_interval(self.update_values, 0.5)  # Update every 1 second
+            Clock.schedule_interval(self.update_values, 0.5)  # Update every 0.5 second
         else:
-            self.updating = False
-            self.update_button.text = "Search Values"
-            Clock.unschedule(self.update_values)
+            self.stop_updating_values()
+
+    def stop_updating_values(self):
+        self.updating = False
+        self.update_button.text = "Search Values"
+        Clock.unschedule(self.update_values)
+
+    def on_key_press(self, key):
+        try:
+            if key.char == 'q':
+                self.stop_updating_values()
+        except AttributeError:
+            pass
 
     def update_values(self, dt):
         pid = self.get_pid_by_name(process_name)
@@ -159,9 +174,7 @@ class MemoryReaderApp(App):
                         self.notification_label.text = f"A gem value has reached {self.threshold}!"
                     else:
                         self.notification_label.text = f"A gold value has reached {self.goldTarget}!"
-                    self.updating = False
-                    self.update_button.text = "Search Values"
-                    Clock.unschedule(self.update_values)  # Stop updating once the condition is met
+                    self.stop_updating_values()  # Stop updating once the condition is met
                 else:
                     self.notification_label.text = ""
                     self.click_at_coords()  # Click the mouse at the specified coordinates
