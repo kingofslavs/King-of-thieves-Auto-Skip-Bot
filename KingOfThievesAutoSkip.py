@@ -117,7 +117,7 @@ class MemoryReaderApp(App):
     def start_updating_values(self, instance):
         if not self.updating:
             self.updating = True
-            self.update_button.text = "Stop Searching"
+            self.update_button.text = "Stop Searching (press q)"
             Clock.schedule_interval(self.update_values, 0.5)  # Update every 0.5 second
         else:
             self.stop_updating_values()
@@ -162,14 +162,14 @@ class MemoryReaderApp(App):
                 total_sum = encryptedvalue1 + encryptedvalue2 + encryptedvalue3
 
                 # Update labels with the new values
-                self.gem1_label.text = f"Gem 1 value: {encryptedvalue1 if encryptedvalue1 <= 1000000 else 0}"
-                self.gem2_label.text = f"Gem 2 value: {encryptedvalue2 if encryptedvalue2 <= 1000000 else 0}"
-                self.gem3_label.text = f"Gem 3 value: {encryptedvalue3 if encryptedvalue3 <= 1000000 else 0}"
-                self.total_label.text = f"Total sum of values: {total_sum if encryptedvalue1 <= 1000000 else 0}"
+                self.gem1_label.text = f"Gem 1 value: {encryptedvalue1 if encryptedvalue1 < 1000000 else 0}"
+                self.gem2_label.text = f"Gem 2 value: {encryptedvalue2 if encryptedvalue2 < 1000000 else 0}"
+                self.gem3_label.text = f"Gem 3 value: {encryptedvalue3 if encryptedvalue3 < 1000000 else 0}"
+                self.total_label.text = f"Total sum of values: {total_sum if encryptedvalue3 < 1000000 else 0}"
                 self.gold_label.text = f"Gold amount: {value5}"
 
                 # Check if any gem value reaches the threshold
-                if (encryptedvalue1 >= self.threshold or encryptedvalue2 >= self.threshold or encryptedvalue3 >= self.threshold or value5 >= self.goldTarget) and encryptedvalue1 < 1000000:
+                if (encryptedvalue1 >= self.threshold or encryptedvalue2 >= self.threshold or encryptedvalue3 >= self.threshold or value5 >= self.goldTarget) and encryptedvalue3 < 1000000:
                     if (encryptedvalue1 >= self.threshold or encryptedvalue2 >= self.threshold or encryptedvalue3 >= self.threshold):
                         self.notification_label.text = f"A gem value has reached {self.threshold}!"
                     else:
