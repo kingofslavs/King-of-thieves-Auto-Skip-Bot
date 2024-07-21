@@ -1,4 +1,5 @@
 import kivy
+import re
 from kivy.app import App
 from kivy.uix.label import Label
 from kivy.uix.boxlayout import BoxLayout
@@ -11,23 +12,94 @@ import pymem.process
 from pynput.mouse import Button as MouseButton, Controller as MouseController
 from pynput import keyboard
 
-# Имя процесса, к которому вы хотите подключиться
 process_name = "Ld9BoxHeadless.exe"
 
-# Словарь для хранения значений по адресам
 values = {}
 
-# Словарь адресов и соответствующих переменных
 addresses = {
-    "address1": 0x330F797C,
-    "address2": 0xB4E2AF44,
-    "address3": 0xB4E2AF6C,
-    "address4": 0xB4E2AF94,
-    "address5": 0x330F7950
+    "address1": 0x0,
+    "address2": 0x0,
+    "address3": 0x0,
+    "address4": 0x0,
+    "address5": 0x0
 }
 
-# Координаты для клика мыши
 click_coords = (1692, 959)
+
+
+class AddressCatcher(App):
+    def build(self):
+        self.title = "Address Catcher"
+        self.Addresslayout = BoxLayout(orientation='vertical')
+
+        self.BaseGemAdressInput = TextInput(hint_text="Enter a base gem address", multiline=False)
+        self.Addresslayout.add_widget(self.BaseGemAdressInput)
+
+        self.EncryptedGemValueAdress1Input = TextInput(hint_text="Enter a encrypted gem address 1", multiline=False)
+        self.Addresslayout.add_widget(self.EncryptedGemValueAdress1Input)
+
+        self.EncryptedGemValueAdress2Input = TextInput(hint_text="Enter a encrypted gem address 2", multiline=False)
+        self.Addresslayout.add_widget(self.EncryptedGemValueAdress2Input)
+
+        self.EncryptedGemValueAdress3Input = TextInput(hint_text="Enter a encrypted gem address 3", multiline=False)
+        self.Addresslayout.add_widget(self.EncryptedGemValueAdress3Input)
+
+        self.GoldValueAdressInput = TextInput(hint_text="Enter a gold value address", multiline=False)
+        self.Addresslayout.add_widget(self.GoldValueAdressInput)
+
+        self.save_button = Button(text="Save Addresses")
+        self.save_button.bind(on_press=self.save_addresses)
+        self.Addresslayout.add_widget(self.save_button)
+
+        self.message_label = Label()
+        self.Addresslayout.add_widget(self.message_label)
+
+        return self.Addresslayout
+
+    def save_addresses(self, instance):
+        base_address = self.BaseGemAdressInput.text
+        encrypted_address1 = self.EncryptedGemValueAdress1Input.text
+        encrypted_address2 = self.EncryptedGemValueAdress2Input.text
+        encrypted_address3 = self.EncryptedGemValueAdress3Input.text
+        gold_address = self.GoldValueAdressInput.text
+
+        base_address = self.add_prefix(base_address)
+        encrypted_address1 = self.add_prefix(encrypted_address1)
+        encrypted_address2 = self.add_prefix(encrypted_address2)
+        encrypted_address3 = self.add_prefix(encrypted_address3)
+        gold_address = self.add_prefix(gold_address)
+
+        if (self.is_valid_address(base_address) and
+                self.is_valid_address(encrypted_address1) and
+                self.is_valid_address(encrypted_address2) and
+                self.is_valid_address(encrypted_address3) and
+                self.is_valid_address(gold_address)):
+
+            addresses["address1"] = base_address
+            addresses["address2"] = encrypted_address1
+            addresses["address3"] = encrypted_address2
+            addresses["address4"] = encrypted_address3
+            addresses["address5"] = gold_address
+            self.message_label.text = "Addresses saved successfully!"
+
+            if all(addresses.values()):
+                print(addresses)
+                App.get_running_app().stop()
+                MemoryReaderApp().run()
+        else:
+            self.message_label.text = "One or more addresses are invalid!"
+
+        print(addresses)
+
+    def is_valid_address(self, address):
+        pattern = re.compile(r'^0x[0-9A-Fa-f]{8}$')
+        return bool(pattern.match(address))
+
+    def add_prefix(self, address):
+        if not address.startswith("0x"):
+            address = "0x" + address
+        return address
+
 
 class MemoryReaderApp(App):
     def build(self):
@@ -39,7 +111,7 @@ class MemoryReaderApp(App):
         self.gem3_label = Label(text="Gem 3 value: ")
         self.total_label = Label(text="Total sum of values: ")
         self.gold_label = Label(text="Gold amount: ")
-        self.notification_label = Label(text="")  # Label for notifications
+        self.notification_label = Label(text="")
 
         # Adding labels to the layout
         self.layout.add_widget(self.gem1_label)
@@ -118,7 +190,7 @@ class MemoryReaderApp(App):
         if not self.updating:
             self.updating = True
             self.update_button.text = "Stop Searching (press q)"
-            Clock.schedule_interval(self.update_values, 0.5)  # Update every 0.5 second
+            Clock.schedule_interval(self.update_values, 1)  # Update every 0.2 second
         else:
             self.stop_updating_values()
 
@@ -129,7 +201,7 @@ class MemoryReaderApp(App):
 
     def on_key_press(self, key):
         try:
-            if key.char == 'q':
+            if key.char in ('q', 'Q', 'й', 'Й'):
                 self.stop_updating_values()
         except AttributeError:
             pass
@@ -142,7 +214,8 @@ class MemoryReaderApp(App):
 
             for key, addr in addresses.items():
                 try:
-                    value = pm.read_int(addr)
+                    addr_int = int(addr, 16)
+                    value = pm.read_int(addr_int)
                     values[key] = value
                 except pymem.exception.MemoryReadError:
                     values[key] = None
@@ -188,4 +261,4 @@ class MemoryReaderApp(App):
                 self.notification_label.text = ""
 
 if __name__ == "__main__":
-    MemoryReaderApp().run()
+    AddressCatcher().run()
